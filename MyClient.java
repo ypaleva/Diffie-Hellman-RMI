@@ -8,40 +8,51 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class MyClient extends UnicastRemoteObject {
 
-    private static String ID;
-    private static RemoteImpl stub;
-    private static Integer b;
-    private static Integer secretKey = 0;
+    private String ID;
+    private RemoteInterface stub;
+    private Integer b;
+    private Integer secretKey = 0;
 
     public MyClient(String ID) throws RemoteException {
-        this.stub = new RemoteImpl();
         this.ID = ID;
     }
 
     public static void main(String[] args) throws RemoteException {
         MyClient client = new MyClient(UUID.randomUUID().toString());
-        client.initializeClient();
+
+        if(args.length >= 2) {
+            client.initializeClient(args[0], args[1]);
+        } else {
+            client.initializeClient("localhost", "yp1g16");
+        }
+        client.disconnect();
     }
 
-    public void initializeClient() {
+    public void initializeClient(String host, String username) {
         Registry registry = null;
-        RemoteInterface stub;
         try {
-            registry = LocateRegistry.getRegistry("localhost", 2605);
+            registry = LocateRegistry.getRegistry(host,2605);
             stub = (RemoteInterface) registry.lookup("CipherServer");
-            stub.register(ID);
-            System.out.printf("[CLIENT: %s] Registered to server - %s\n", getID(), "CipherServer");
-
-            int x = stub.requestXValueFromServer();
+            stub.register(this.getID());
+            //System.out.printf("[CLIENT: %s] Registered to server - %s\n", this.getID(), "CipherServer");
+            System.out.printf("[CLIENT: %s] {", this.getID());
+            int x = stub.requestXValueFromServer(this.getID());
             generateY(stub);
-            System.out.println("Client secret key: " + generateSecretKey(x));
-            System.out.println(decrypt(stub.requestCipherFromServer()));
-
+            generateSecretKey(x);
+            String cipher = stub.requestCipherFromServer(username, this.getID());
+            if (cipher != null) {
+                System.out.printf(", Secret: %d, Message: %s}\n", getSecretKey(), decrypt(cipher).substring(0, 50));
+            }
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
         }
     }
+
+    public void disconnect() throws RemoteException {
+        getStub().unregister(this.getID());
+    }
+
 
     public void generateY(RemoteInterface remoteInterface) throws RemoteException {
         BigInteger p = new BigInteger(String.valueOf(remoteInterface.requestPrimeNumFromServer()));
@@ -49,7 +60,7 @@ public class MyClient extends UnicastRemoteObject {
         setB(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
         BigInteger b = new BigInteger(String.valueOf(getB()));
         BigInteger y = g.modPow(b, p);
-        System.out.println("Y value for client: " + y);
+        System.out.printf("Y Value: %d", y);
         remoteInterface.sendYValueToServer(getID(), y.intValue());
     }
 
@@ -57,7 +68,6 @@ public class MyClient extends UnicastRemoteObject {
         BigInteger kValueClient = BigInteger.valueOf(x).modPow(BigInteger.valueOf(getB()),
                 BigInteger.valueOf(getStub().requestPrimeNumFromServer()));
         setSecretKey(kValueClient.intValue());
-        System.out.println("Secret key for client: "+ getSecretKey());
         return getSecretKey();
     }
 
@@ -178,15 +188,15 @@ public class MyClient extends UnicastRemoteObject {
     }
 
     public void setID(String ID) {
-        MyClient.ID = ID;
+        this.ID = ID;
     }
 
-    public RemoteImpl getStub() {
+    public RemoteInterface getStub() {
         return stub;
     }
 
-    public void setStub(RemoteImpl stub) {
-        MyClient.stub = stub;
+    public void setStub(RemoteInterface stub) {
+        this.stub = stub;
     }
 
     public Integer getB() {
@@ -194,7 +204,7 @@ public class MyClient extends UnicastRemoteObject {
     }
 
     public void setB(Integer b) {
-        MyClient.b = b;
+        this.b = b;
     }
 
     public Integer getSecretKey() {
@@ -202,6 +212,6 @@ public class MyClient extends UnicastRemoteObject {
     }
 
     public void setSecretKey(Integer secretKey) {
-        MyClient.secretKey = secretKey;
+        this.secretKey = secretKey;
     }
 }

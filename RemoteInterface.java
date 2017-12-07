@@ -4,7 +4,7 @@ import java.rmi.RemoteException;
 
 public interface RemoteInterface extends Remote {
 
-    String requestCipherFromServer() throws RemoteException, NotBoundException;
+    String requestCipherFromServer(String username, String ID) throws RemoteException;
 
     void sendYValueToServer(String ID, Integer y) throws RemoteException;
 
@@ -12,7 +12,7 @@ public interface RemoteInterface extends Remote {
 
     Integer requestPrimRootFromServer() throws RemoteException;
 
-    Integer requestXValueFromServer() throws RemoteException;
+    Integer requestXValueFromServer(String ID) throws RemoteException;
 
     /**
      * @param ID     - The ID of the new client we want to register.

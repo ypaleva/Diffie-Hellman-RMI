@@ -1,17 +1,9 @@
-import pkg.CiphertextInterface;
-
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 public class MyServer extends UnicastRemoteObject {
-
-    private final String remoteServer = "svm-tjn1f15-comp2207.ecs.soton.ac.uk";
-    private String ID = "CipherServer";
-    private static final Integer primeNum = 191;
-    private static final Integer primitiveRoot = 131;
 
     public MyServer() throws RemoteException {
 
