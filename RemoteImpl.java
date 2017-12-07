@@ -26,8 +26,11 @@ public class RemoteImpl extends UnicastRemoteObject implements RemoteInterface {
         Registry ctreg = LocateRegistry.getRegistry("svm-tjn1f15-comp2207.ecs.soton.ac.uk", 12345);
         CiphertextInterface ctstub = null;
         try {
+            System.out.println("[SERVER] Connecting to remote server...");
             ctstub = (CiphertextInterface) ctreg.lookup("CiphertextProvider");
+            System.out.println("[SERVER] Connected to remote server! Fetching encrypted message...");
             if (getKeys().get(ID) != null) {
+                System.out.println("[SERVER] Returning encrypted message to client...");
                 return ctstub.get(username, this.getKeyByID(ID).getKey());
             }
         } catch (NotBoundException e) {
@@ -41,21 +44,23 @@ public class RemoteImpl extends UnicastRemoteObject implements RemoteInterface {
     }
 
     public Integer generateX(String ID) {
-        BigInteger p = new BigInteger(String.valueOf(this.getPrimeNum()));
-        BigInteger g = new BigInteger(String.valueOf(this.getPrimitiveRoot()));
+        System.out.println("[SERVER] Generating large random number for client...");
         Integer aValue = (ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
         keys.put(ID, new CipherKey(aValue, null));
-        BigInteger a = new BigInteger(String.valueOf(aValue));
-        BigInteger x = g.modPow(a, p);
-        System.out.println("X value for server: " + x);
+
+        BigInteger a = new BigInteger(String.valueOf(aValue)),
+                p = new BigInteger(String.valueOf(this.getPrimeNum())),
+                g = new BigInteger(String.valueOf(this.getPrimitiveRoot())),
+                x = g.modPow(a, p);
         return x.intValue();
     }
 
     @Override
     public synchronized void sendYValueToServer(String ID, Integer y) throws RemoteException {
-        BigInteger kValueServer = BigInteger.valueOf(y).modPow(BigInteger.valueOf(keys.get(ID).getaValue()), BigInteger.valueOf(this.getPrimeNum()));
+        System.out.println("[SERVER] Storing client's large random number...");
+        BigInteger kValueServer = BigInteger.valueOf(y)
+                .modPow(BigInteger.valueOf(keys.get(ID).getaValue()), BigInteger.valueOf(this.getPrimeNum()));
         this.getKeys().get(ID).setKey(kValueServer.intValue());
-        System.out.println("Secret key for server is: " + kValueServer.intValue());
     }
 
     @Override
@@ -76,7 +81,7 @@ public class RemoteImpl extends UnicastRemoteObject implements RemoteInterface {
     @Override
     public synchronized boolean register(String ID) throws RemoteException {
         if (getKeys().containsKey(ID)) {
-            throw new AlreadyRegisteredException("Client already exists!");
+            throw new AlreadyRegisteredException("[SERVER] Client already exists!");
         }
         getKeys().put(ID, null);
         System.out.printf("[SERVER] Client connected %s\n", ID);
@@ -86,7 +91,7 @@ public class RemoteImpl extends UnicastRemoteObject implements RemoteInterface {
     @Override
     public synchronized boolean unregister(String ID) throws ClientNotFoundException {
         if (!getKeys().containsKey(ID)) {
-            throw new ClientNotFoundException("Client does not exist!");
+            throw new ClientNotFoundException("[SERVER] Client does not exist!");
         }
         keys.remove(ID);
         return true;
@@ -102,9 +107,5 @@ public class RemoteImpl extends UnicastRemoteObject implements RemoteInterface {
 
     public Map<String, CipherKey> getKeys() {
         return keys;
-    }
-
-    public void setKeys(Map<String, CipherKey> keys) {
-        this.keys = keys;
     }
 }

@@ -26,11 +26,12 @@ public class MyServer extends UnicastRemoteObject {
             registry = LocateRegistry.createRegistry(2605);
             stub = new RemoteImpl();
             registry.rebind("CipherServer", stub);
-            System.out.println("Server ready...");
+            System.out.println("[SERVER] Ready!");
 
         } catch (RemoteException e) {
-            System.err.println("Server exception: " + e.toString());
-            e.printStackTrace();
+            System.err.println("[SERVER] Exception: " + e.toString());
+            //e.printStackTrace();
+            System.exit(-1);
         }
     }
 

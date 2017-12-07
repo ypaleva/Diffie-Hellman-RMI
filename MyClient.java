@@ -20,11 +20,17 @@ public class MyClient extends UnicastRemoteObject {
     public static void main(String[] args) throws RemoteException {
         MyClient client = new MyClient(UUID.randomUUID().toString());
 
+        /*
+            arg[0] = RMI Server address,
+            arg[1] = Username
+         */
         if(args.length >= 2) {
             client.initializeClient(args[0], args[1]);
         } else {
             client.initializeClient("localhost", "yp1g16");
         }
+
+        //Disconnect client after decrypting method.
         client.disconnect();
     }
 
@@ -34,37 +40,39 @@ public class MyClient extends UnicastRemoteObject {
             registry = LocateRegistry.getRegistry(host,2605);
             stub = (RemoteInterface) registry.lookup("CipherServer");
             stub.register(this.getID());
-            //System.out.printf("[CLIENT: %s] Registered to server - %s\n", this.getID(), "CipherServer");
-            System.out.printf("[CLIENT: %s] {", this.getID());
+            System.out.printf("[CLIENT: %s] Registered to CipherServer (%s:2605) - %s\n", this.getID(), host, "CipherServer");
             int x = stub.requestXValueFromServer(this.getID());
             generateY(stub);
             generateSecretKey(x);
             String cipher = stub.requestCipherFromServer(username, this.getID());
             if (cipher != null) {
-                System.out.printf(", Secret: %d, Message: %s}\n", getSecretKey(), decrypt(cipher).substring(0, 50));
+                System.out.printf("[CLIENT: %s] Decrypted message:\n\n%s\n", this.getID(), decrypt(cipher));
             }
         } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
+            System.err.printf("[CLIENT %s] Exception: %s\n", this.getID(), e.toString());
             e.printStackTrace();
         }
     }
 
     public void disconnect() throws RemoteException {
+        System.out.printf("[CLIENT %s] Disconnecting...\n", this.getID());
         getStub().unregister(this.getID());
+        System.exit(0);
     }
 
-
     public void generateY(RemoteInterface remoteInterface) throws RemoteException {
-        BigInteger p = new BigInteger(String.valueOf(remoteInterface.requestPrimeNumFromServer()));
-        BigInteger g = new BigInteger(String.valueOf(remoteInterface.requestPrimRootFromServer()));
+        System.out.printf("[CLIENT %s] Generating large random number...\n", this.getID());
         setB(ThreadLocalRandom.current().nextInt(1, Integer.MAX_VALUE));
-        BigInteger b = new BigInteger(String.valueOf(getB()));
-        BigInteger y = g.modPow(b, p);
-        System.out.printf("Y Value: %d", y);
+        BigInteger b = new BigInteger(String.valueOf(getB())),
+        p = new BigInteger(String.valueOf(remoteInterface.requestPrimeNumFromServer())),
+        g = new BigInteger(String.valueOf(remoteInterface.requestPrimRootFromServer())),
+        y = g.modPow(b, p);
+
         remoteInterface.sendYValueToServer(getID(), y.intValue());
     }
 
     public Integer generateSecretKey(Integer x) throws RemoteException {
+        System.out.printf("[CLIENT %s] Generating secret key...\n", this.getID());
         BigInteger kValueClient = BigInteger.valueOf(x).modPow(BigInteger.valueOf(getB()),
                 BigInteger.valueOf(getStub().requestPrimeNumFromServer()));
         setSecretKey(kValueClient.intValue());
@@ -93,6 +101,7 @@ public class MyClient extends UnicastRemoteObject {
     }
 
     private String decrypt(String message) {
+        System.out.printf("[CLIENT %s] Decrypting message...", this.getID());
         StringBuilder decryptedMessage = new StringBuilder();
         if (!(message.length() % 8 == 0)) {
             throw new IllegalArgumentException("The string is not divisible by 8 and cannot be decrypted!");
