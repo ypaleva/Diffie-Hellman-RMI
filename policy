@@ -1,10 +1,5 @@
 grant {
-    permission java . net. SocketPermission
-        " *:1024 -65535 ",
-        " connect , accept , resolve ";
-    permission java . net. SocketPermission
-        " *:80 ", " connect ";
-    permission java.io.File Permission
-        "c:\\home\\RMIdir\\-", "read";
-    permission java.util.PropertyPermission "*", "read,write";
+    permission java.net.SocketPermission "*:1024-65535", "connect,accept,resolve,listen";
+    permission java.net.SocketPermission "*:80", "connect";
+    permission java.io.FilePermission "c:\\home\\RMIdir\\-", "read";
  };

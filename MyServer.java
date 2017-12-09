@@ -10,15 +10,16 @@ public class MyServer extends UnicastRemoteObject {
     }
 
     public static void main(String[] args) throws RemoteException {
+        System.setProperty( "java.security.policy", "policy" );
+        if (System.getSecurityManager() == null) {
+            System.setSecurityManager(new SecurityManager());
+        }
+
         MyServer server = new MyServer();
         server.initializeServer();
     }
 
     public void initializeServer() {
-//      System.setProperty( "java.security.policy", "policy" );
-//      if (System.getSecurityManager() == null) {
-//          System.setSecurityManager(new SecurityManager());
-//      }
         Registry registry = null;
         RemoteImpl stub = null;
         CiphertextInterface ct_stub = null;
